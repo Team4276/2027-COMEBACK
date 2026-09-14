@@ -7,28 +7,28 @@ import frc.team4276.frc2026.shooter.ShotCalculator.ShootingParameters;
 public class ShooterConstants {
     public static final double tolerance = 10; // rpm
 
-    public static final Transform3d robotToTurret = Transform3d.kZero;
+    public static final Transform3d robotToTurret = Transform3d.ZERO;
 
     public static enum ParamPreset {
         // Shooting Presets
-        SHOWER(Rotation2d.kZero,
+        SHOWER(Rotation2d.ZERO,
                         0.0,
                         0.0),
-        SHUB(Rotation2d.kZero,
+        SHUB(Rotation2d.ZERO,
                         0.0,
                         0.0),
-        SHERRY(Rotation2d.kZero,
+        SHERRY(Rotation2d.ZERO,
                         0.0,
                         0.0),
-        SHTEAL(Rotation2d.kZero,
+        SHTEAL(Rotation2d.ZERO,
                         0.0,
                         0.0),
                         
         // Other
-        STOW(Rotation2d.kZero,
+        STOW(Rotation2d.ZERO,
                         0.0,
                         0.0),
-        TURTLE(Rotation2d.kZero,
+        TURTLE(Rotation2d.ZERO,
                         0.0,
                         0.0);
 
