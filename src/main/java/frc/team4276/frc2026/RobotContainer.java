@@ -9,6 +9,8 @@ import org.wpilib.math.geometry.Rotation2d;
 import org.wpilib.driverstation.MatchState;
 import org.wpilib.driverstation.Alliance;
 import org.wpilib.driverstation.MatchType;
+import org.wpilib.driverstation.DriverStation;
+import org.wpilib.driverstation.internal.DriverStationBackend;
 import org.wpilib.driverstation.DriverStationErrors;
 import org.wpilib.command3.Command;
 import org.wpilib.command3.Commands;
@@ -166,12 +168,12 @@ public class RobotContainer {
 
     configureBindings();
 
-    DriverStation.silenceJoystickConnectionWarning(true);
+    DriverStationBackend.silenceJoystickConnectionAlert(true);
   }
 
   private void configureBindings() {
     driver
-        .start()
+        .menu()
         .onTrue(
             Commands.runOnce(
                 () -> RobotState.getInstance()
