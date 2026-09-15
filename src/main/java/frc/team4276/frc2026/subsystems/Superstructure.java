@@ -11,10 +11,10 @@ import org.wpilib.driverstation.Alliance;
 import org.wpilib.driverstation.MatchType;
 import org.wpilib.driverstation.DriverStationErrors;
 import org.wpilib.driverstation.GenericHID.RumbleType;
-import org.wpilib.command2.Command;
-import org.wpilib.command2.Commands;
-import org.wpilib.command2.SubsystemBase;
-import org.wpilib.command2.button.Trigger;
+import org.wpilib.command3.Command;
+import org.wpilib.command3.Commands;
+import org.wpilib.command3.SubsystemBase;
+import org.wpilib.command3.button.Trigger;
 import frc.team4276.frc2026.RobotState;
 import frc.team4276.frc2026.FieldConstants.FieldZone;
 import frc.team4276.frc2026.shooter.ShotCalculator;
@@ -195,7 +195,7 @@ public class Superstructure extends SubsystemBase {
       } else if (preset == ParamPreset.SHERRY) {
         feedState = FeedState.FERRY;
 
-        // drive.setHeadingAlignRotation(AllianceFlipUtil.apply(Rotation2d.kZero));
+        // drive.setHeadingAlignRotation(AllianceFlipUtil.apply(Rotation2d.ZERO));
 
       }
     });

@@ -2,8 +2,8 @@ package frc.team4276.frc2026.auto;
 
 import org.wpilib.math.geometry.Pose2d;
 import org.wpilib.math.geometry.Rotation2d;
-import org.wpilib.command2.Command;
-import org.wpilib.command2.Commands;
+import org.wpilib.command3.Command;
+import org.wpilib.command3.Commands;
 import frc.team4276.frc2026.FieldConstants;
 import frc.team4276.frc2026.RobotContainer;
 import frc.team4276.frc2026.RobotState;
@@ -27,7 +27,7 @@ public class AutoFactory {
     return resetPose(
         new Pose2d(
             RobotState.getInstance().getEstimatedPose().getTranslation(),
-            AllianceFlipUtil.apply(Rotation2d.kZero)));
+            AllianceFlipUtil.apply(Rotation2d.ZERO)));
   }
 
   void autoEnd(){

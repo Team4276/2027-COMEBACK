@@ -1,10 +1,10 @@
 package frc.team4276.lib.hid;
 
 import org.wpilib.driverstation.GenericHID.RumbleType;
-import org.wpilib.command2.Command;
-import org.wpilib.command2.Commands;
-import org.wpilib.command2.SequentialCommandGroup;
-import org.wpilib.command2.button.CommandXboxController;
+import org.wpilib.command3.Command;
+import org.wpilib.command3.Commands;
+import org.wpilib.command3.SequentialCommandGroup;
+import org.wpilib.command3.button.CommandXboxController;
 
 public class ViXController extends CommandXboxController implements JoystickOutputController {
   private double JOYSTICK_DEADBAND = 0.1;

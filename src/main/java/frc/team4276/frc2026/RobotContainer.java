@@ -7,12 +7,11 @@ package frc.team4276.frc2026;
 import org.wpilib.math.geometry.Pose2d;
 import org.wpilib.math.geometry.Rotation2d;
 import org.wpilib.driverstation.MatchState;
-import org.wpilib.driverstation.RobotState;
 import org.wpilib.driverstation.Alliance;
 import org.wpilib.driverstation.MatchType;
 import org.wpilib.driverstation.DriverStationErrors;
-import org.wpilib.command2.Command;
-import org.wpilib.command2.Commands;
+import org.wpilib.command3.Command;
+import org.wpilib.command3.Commands;
 import frc.team4276.frc2026.shooter.ShooterConstants.ParamPreset;
 import frc.team4276.frc2026.subsystems.Superstructure;
 import frc.team4276.frc2026.subsystems.drive.Drive;
@@ -179,7 +178,7 @@ public class RobotContainer {
                     .resetPose(
                         new Pose2d(
                             RobotState.getInstance().getEstimatedPose().getTranslation(),
-                            AllianceFlipUtil.apply(Rotation2d.kZero))))
+                            AllianceFlipUtil.apply(Rotation2d.ZERO))))
                 .ignoringDisable(true));
 
     driver

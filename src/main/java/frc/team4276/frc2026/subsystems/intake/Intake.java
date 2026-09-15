@@ -4,7 +4,7 @@ import static frc.team4276.frc2026.subsystems.intake.IntakeConstants.*;
 
 import org.littletonrobotics.junction.Logger;
 
-import org.wpilib.command2.SubsystemBase;
+import org.wpilib.command3.SubsystemBase;
 
 public class Intake extends SubsystemBase {
     private IntakeIO io;

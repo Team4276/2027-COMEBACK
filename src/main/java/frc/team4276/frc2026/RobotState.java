@@ -35,18 +35,18 @@ public class RobotState {
       new SwerveModulePosition()
   };
 
-  private Rotation2d lastYaw = Rotation2d.kZero;
+  private Rotation2d lastYaw = Rotation2d.ZERO;
 
   private SwerveDrivePoseEstimator poseEstimator = new SwerveDrivePoseEstimator(
       kinematics,
       lastYaw,
       lastWheelPositions,
-      Pose2d.kZero,
+      Pose2d.ZERO,
       VecBuilder.fill(0.1, 0.1, 0.1), // TODO tune
       VecBuilder.fill(.9, .9, 2.0));
 
   private SwerveDrivePoseEstimator odomPoseEstimator = new SwerveDrivePoseEstimator(kinematics, lastYaw,
-      lastWheelPositions, Pose2d.kZero);
+      lastWheelPositions, Pose2d.ZERO);
 
   private static final double poseBufferSizeSec = 2.0;
   private final TimeInterpolatableBuffer<Pose2d> poseBuffer = TimeInterpolatableBuffer.createBuffer(poseBufferSizeSec);
@@ -132,9 +132,9 @@ public class RobotState {
         / Math.cos(-tx);
     Pose2d fieldToCamera = fieldToRobot.transformBy(GeomUtil.toTransform2d(robotToCamera));
     Pose2d fieldToFuel = fieldToCamera
-        .transformBy(new Transform2d(Translation2d.kZero, new Rotation2d(-tx)))
+        .transformBy(new Transform2d(Translation2d.ZERO, new Rotation2d(-tx)))
         .transformBy(
-            new Transform2d(new Translation2d(cameraToFuelNorm, 0), Rotation2d.kZero));
+            new Transform2d(new Translation2d(cameraToFuelNorm, 0), Rotation2d.ZERO));
     Translation2d fieldToFuelTranslation2d = fieldToFuel.getTranslation();
     FuelPoseRecord fuelPoseRecord = new FuelPoseRecord(fieldToFuelTranslation2d, observation.timestamp());
 

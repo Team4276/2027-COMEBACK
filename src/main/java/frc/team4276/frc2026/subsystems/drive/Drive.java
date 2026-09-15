@@ -23,7 +23,7 @@ import org.wpilib.driverstation.Alliance;
 import org.wpilib.driverstation.MatchType;
 import org.wpilib.driverstation.DriverStationErrors;
 import org.wpilib.smartdashboard.SmartDashboard;
-import org.wpilib.command2.SubsystemBase;
+import org.wpilib.command3.SubsystemBase;
 import frc.team4276.frc2026.Constants;
 import frc.team4276.frc2026.RobotState;
 import frc.team4276.lib.dashboard.LoggedTunablePID;
@@ -59,10 +59,10 @@ public class Drive extends SubsystemBase {
   private final LoggedTunablePID headingAlignController = new LoggedTunablePID(20.0, 0, 0, Math.toRadians(1.0),
       "Drive/HeadingAlign");
 
-  private Pose2d desiredAutoAlignPose = Pose2d.kZero;
+  private Pose2d desiredAutoAlignPose = Pose2d.ZERO;
   private final double autoAlignStaticFrictionConstant = maxVelocityMPS * 0.02;
 
-  private Rotation2d desiredHeadingAlignRotation = Rotation2d.kZero;
+  private Rotation2d desiredHeadingAlignRotation = Rotation2d.ZERO;
 
   private double maxAutoAlignDriveTranslationOutput = maxVelocityMPS * 0.67;
   private double maxAutoAlignDriveRotationOutput = maxAngularVelocity;
@@ -317,7 +317,7 @@ public class Drive extends SubsystemBase {
     // Square magnitude for more precise control
     linearMagnitude = linearMagnitude * linearMagnitude;
 
-    Translation2d linearVelocity = Translation2d.kZero;
+    Translation2d linearVelocity = Translation2d.ZERO;
 
     if (linearMagnitude > 1e-6) {
       linearVelocity = new Translation2d(

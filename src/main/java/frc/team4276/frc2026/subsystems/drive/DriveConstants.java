@@ -30,10 +30,10 @@ public class DriveConstants {
   public static final Rotation2d backLeftZeroRotation = new Rotation2d(0.034);
   public static final Rotation2d backRightZeroRotation = new Rotation2d(2.5579);
 
-  public static final Rotation2d frontLeftZeroHelperRotation = Rotation2d.kCCW_90deg;
-  public static final Rotation2d frontRightZeroHelperRotation = Rotation2d.kZero;
+  public static final Rotation2d frontLeftZeroHelperRotation = Rotation2d.CCW_90DEG;
+  public static final Rotation2d frontRightZeroHelperRotation = Rotation2d.ZERO;
   public static final Rotation2d backLeftZeroHelperRotation = Rotation2d.k180deg;
-  public static final Rotation2d backRightZeroHelperRotation = Rotation2d.kCW_90deg;
+  public static final Rotation2d backRightZeroHelperRotation = Rotation2d.CCW_90DEG;
 
   // Device CAN IDs
   public static final int frontLeftDriveCanId = Ports.FRONT_LEFT_DRIVE;
@@ -53,7 +53,7 @@ public class DriveConstants {
   public static final double driveMotorReduction = (45.0 * 22.0) / (drivingMotorPinionTeeth * 15.0);
 
   public static final DCMotor driveGearbox = DCMotor.getKrakenX60(1);
-  public static final double maxSteerVelocity = driveGearbox.freeSpeedRadPerSec / driveMotorReduction;
+  public static final double maxSteerVelocity = driveGearbox.freeSpeed / driveMotorReduction;
 
   public static final double driveEncoderPositionFactor = 2 * Math.PI / driveMotorReduction;
   public static final double driveEncoderVelocityFactor = (2 * Math.PI) / 60.0 / driveMotorReduction;

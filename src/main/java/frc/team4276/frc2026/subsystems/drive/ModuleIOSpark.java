@@ -63,14 +63,14 @@ public class ModuleIOSpark implements ModuleIO {
       case 1 -> frontRightZeroRotation;
       case 2 -> backLeftZeroRotation;
       case 3 -> backRightZeroRotation;
-      default -> Rotation2d.kZero;
+      default -> Rotation2d.ZERO;
     };
     zeroHelperRotation = switch (module) {
       case 0 -> frontLeftZeroHelperRotation;
       case 1 -> frontRightZeroHelperRotation;
       case 2 -> backLeftZeroHelperRotation;
       case 3 -> backRightZeroHelperRotation;
-      default -> Rotation2d.kZero;
+      default -> Rotation2d.ZERO;
     };
     driveSpark = new SparkFlex(
         switch (module) {
