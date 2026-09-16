@@ -60,7 +60,7 @@ public interface Subsystem {
    * @param defaultCommand the default command to associate with this subsystem
    */
   default void setDefaultCommand(Command defaultCommand) {
-    CommandScheduler.getInstance().setDefaultCommand(this, defaultCommand);
+    Scheduler.getDefault().setDefaultCommand(this, defaultCommand);
   }
 
   /**
@@ -68,7 +68,7 @@ public interface Subsystem {
    * is currently running.
    */
   default void removeDefaultCommand() {
-    CommandScheduler.getInstance().removeDefaultCommand(this);
+    Scheduler.getDefault().removeDefaultCommand(this);
   }
 
   /**
@@ -78,7 +78,7 @@ public interface Subsystem {
    * @return the default command associated with this subsystem
    */
   default Command getDefaultCommand() {
-    return CommandScheduler.getInstance().getDefaultCommand(this);
+    return Scheduler.getDefault().getDefaultCommand(this);
   }
 
   /**
@@ -88,7 +88,7 @@ public interface Subsystem {
    * @return the scheduled command currently requiring this subsystem
    */
   default Command getCurrentCommand() {
-    return CommandScheduler.getInstance().requiring(this);
+    return Scheduler.getDefault().requiring(this);
   }
 
   /**
@@ -96,7 +96,7 @@ public interface Subsystem {
    * Subsystem#periodic()} method to be called when the scheduler runs.
    */
   default void register() {
-    CommandScheduler.getInstance().registerSubsystem(this);
+    Scheduler.getDefault().registerSubsystem(this);
   }
 
   /**

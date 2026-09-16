@@ -2,7 +2,7 @@ package frc.team4276.lib.hid;
 
 import org.wpilib.driverstation.GenericHID.RumbleType;
 import org.wpilib.command3.Command;
-import org.wpilib.command3.Commands;
+import frc.team4276.frc2026.CommandSubsystemReimplentation.Commands;
 import org.wpilib.command3.SequentialCommandGroup;
 import org.wpilib.command3.button.CommandXboxController;
 

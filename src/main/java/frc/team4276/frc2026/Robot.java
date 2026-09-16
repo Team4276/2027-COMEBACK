@@ -101,7 +101,7 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void utilityInit() {
-    CommandScheduler.getInstance().cancelAll();
+    Scheduler.getDefault().cancelAll();
   }
 
   @Override

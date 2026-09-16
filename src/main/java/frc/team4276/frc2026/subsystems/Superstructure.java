@@ -12,7 +12,7 @@ import org.wpilib.driverstation.MatchType;
 import org.wpilib.driverstation.DriverStationErrors;
 import org.wpilib.driverstation.GenericHID.RumbleType;
 import org.wpilib.command3.Command;
-import org.wpilib.command3.Commands;
+import frc.team4276.frc2026.CommandSubsystemReimplentation.Commands;
 //import frc.team4276.frc2026.CommandSubsystemReimplentation.SubsystemBase;
 import frc.team4276.frc2026.CommandSubsystemReimplentation.SubsystemBase;
 import org.wpilib.command3.button.Trigger;
