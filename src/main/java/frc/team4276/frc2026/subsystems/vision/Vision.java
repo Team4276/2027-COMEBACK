@@ -22,7 +22,7 @@ import org.wpilib.math.numbers.N1;
 import org.wpilib.math.numbers.N3;
 import org.wpilib.util.Alert;
 import org.wpilib.util.Alert.Level;
-import org.wpilib.command3.SubsystemBase;
+import frc.team4276.frc2026.CommandSubsystemReimplentation.SubsystemBase;
 import frc.team4276.frc2026.FieldConstants;
 import frc.team4276.frc2026.RobotState;
 import frc.team4276.frc2026.RobotState.FuelTxTyObservation;

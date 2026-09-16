@@ -3,7 +3,7 @@ package frc.team4276.frc2026.subsystems.turret;
 import org.littletonrobotics.junction.Logger;
 
 import org.wpilib.math.geometry.Rotation2d;
-import org.wpilib.command3.SubsystemBase;
+import frc.team4276.frc2026.CommandSubsystemReimplentation.SubsystemBase;
 
 public class Turret extends SubsystemBase {
     private final TurretIOInputsAutoLogged inputs = new TurretIOInputsAutoLogged();

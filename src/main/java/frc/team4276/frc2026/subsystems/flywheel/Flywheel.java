@@ -2,7 +2,7 @@ package frc.team4276.frc2026.subsystems.flywheel;
 
 import org.littletonrobotics.junction.Logger;
 
-import org.wpilib.command3.SubsystemBase;
+import frc.team4276.frc2026.CommandSubsystemReimplentation.SubsystemBase;
 import frc.team4276.lib.dashboard.LoggedTunableNumber;
 
 public class Flywheel extends SubsystemBase {

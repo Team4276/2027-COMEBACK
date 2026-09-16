@@ -23,7 +23,7 @@ import org.wpilib.driverstation.Alliance;
 import org.wpilib.driverstation.MatchType;
 import org.wpilib.driverstation.DriverStationErrors;
 import org.wpilib.smartdashboard.SmartDashboard;
-import org.wpilib.command3.SubsystemBase;
+import frc.team4276.frc2026.CommandSubsystemReimplentation.SubsystemBase;
 import frc.team4276.frc2026.Constants;
 import frc.team4276.frc2026.RobotState;
 import frc.team4276.lib.dashboard.LoggedTunablePID;
