@@ -3,7 +3,7 @@ package frc.team4276.frc2026.auto;
 import org.wpilib.math.geometry.Pose2d;
 import org.wpilib.math.geometry.Rotation2d;
 import org.wpilib.command3.Command;
-import org.wpilib.command3.Commands;
+
 import frc.team4276.frc2026.FieldConstants;
 import frc.team4276.frc2026.RobotContainer;
 import frc.team4276.frc2026.RobotState;
@@ -35,7 +35,8 @@ public class AutoFactory {
   }
 
   private Command resetPose(Pose2d pose) {
-    return Commands.runOnce(() -> RobotState.getInstance().resetPose(pose));
+    return Command.noRequirements(coroutine -> RobotState.getInstance().resetPose(pose))
+        .named("ResetPose");
   }
 
   // private Command driveTrajectory(Trajectory<SwerveSample> traj) {
@@ -99,7 +100,8 @@ public class AutoFactory {
 
   /** Command that waits for x boundary to be crossed. See {@link #xCrossed(double, boolean)} */
   private Command waitUntilXCrossed(double xPosition, boolean towardsCenterline) {
-    return Commands.waitUntil(() -> xCrossed(xPosition, towardsCenterline));
+    return Command.waitUntil(() -> xCrossed(xPosition, towardsCenterline))
+        .named("WaitUntilXCrossed");
   }
 
   /**
@@ -128,11 +130,12 @@ public class AutoFactory {
 
   /** Command that waits for y boundary to be crossed. See {@link #yCrossed(double, boolean)} */
   private Command waitUntilYCrossed(double yPosition, boolean towardsCenterline) {
-    return Commands.waitUntil(() -> yCrossed(yPosition, towardsCenterline));
+    return Command.waitUntil(() -> yCrossed(yPosition, towardsCenterline))
+        .named("WaitUntilYCrossed");
   }
 
   private Command printCommand(String text) {
-    return Commands.runOnce(() -> System.out.println(text));
+    return Command.noRequirements(coroutine -> System.out.println(text)).named("Print: " + text);
   }
 
   private Command notificationCommand(String notification) {
@@ -141,6 +144,7 @@ public class AutoFactory {
   }
 
   private Command notificationCommand(Notification notification) { // Jank but gud enough for now
-    return Commands.runOnce(() -> Elastic.sendNotification(notification));
+    return Command.noRequirements(coroutine -> Elastic.sendNotification(notification))
+        .named("Notification");
   }
 }

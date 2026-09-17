@@ -15,20 +15,27 @@ package frc.team4276.lib;
 
 import com.revrobotics.REVLibError;
 import com.revrobotics.spark.SparkBase;
+import com.revrobotics.util.Signal;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 public class SparkUtil {
   /** Stores whether any error was has been detected by other utility methods. */
   public static boolean sparkStickyFault = false;
 
+  // REVLib telemetry getters (encoder position/velocity, applied output, bus voltage,
+  // output current, ...) now return Signal<Double> instead of a raw double, carrying
+  // per-value validity via isValid() rather than the old device-wide spark.getLastError()
+  // side channel. Both are checked here to preserve the original device-health intent.
+
   /** Processes a value from a Spark only if the value is valid. */
-  public static void ifOk(SparkBase spark, DoubleSupplier supplier, DoubleConsumer consumer) {
-    double value = supplier.getAsDouble();
-    if (spark.getLastError() == REVLibError.kOk) {
-      consumer.accept(value);
+  public static void ifOk(
+      SparkBase spark, Supplier<Signal<Double>> supplier, DoubleConsumer consumer) {
+    Signal<Double> signal = supplier.get();
+    if (signal.isValid() && spark.getLastError() == REVLibError.kOk) {
+      consumer.accept(signal.get());
     } else {
       sparkStickyFault = true;
     }
@@ -36,14 +43,15 @@ public class SparkUtil {
 
   /** Processes a value from a Spark only if the value is valid. */
   public static void ifOk(
-      SparkBase spark, DoubleSupplier[] suppliers, Consumer<double[]> consumer) {
-    double[] values = new double[suppliers.length];
-    for (int i = 0; i < suppliers.length; i++) {
-      values[i] = suppliers[i].getAsDouble();
-      if (spark.getLastError() != REVLibError.kOk) {
+      SparkBase spark, List<Supplier<Signal<Double>>> suppliers, Consumer<double[]> consumer) {
+    double[] values = new double[suppliers.size()];
+    for (int i = 0; i < suppliers.size(); i++) {
+      Signal<Double> signal = suppliers.get(i).get();
+      if (!signal.isValid() || spark.getLastError() != REVLibError.kOk) {
         sparkStickyFault = true;
         return;
       }
+      values[i] = signal.get();
     }
     consumer.accept(values);
   }

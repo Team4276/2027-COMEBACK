@@ -3,22 +3,21 @@ package frc.team4276.frc2026.subsystems.turret;
 import org.littletonrobotics.junction.Logger;
 
 import org.wpilib.math.geometry.Rotation2d;
-import org.wpilib.command3.SubsystemBase;
+import org.wpilib.command3.Mechanism;
 
-public class Turret extends SubsystemBase {
+public class Turret implements Mechanism {
     private final TurretIOInputsAutoLogged inputs = new TurretIOInputsAutoLogged();
     private final TurretIO io;
 
     public Turret(TurretIO io){
         this.io = io;
-        
+
+        getRegisteredScheduler().addPeriodic(this::updateInputs);
     }
 
-    @Override
-    public void periodic() {
+    private void updateInputs() {
         io.updateInputs(inputs);
         Logger.processInputs("Turret", inputs);
-        
     }
 
     public void setPositionVelocity(Rotation2d rotation, double velocity){

@@ -1,15 +1,15 @@
 package frc.team4276.frc2026;
 
-import org.wpilib.vision.apriltag.AprilTagFieldLayout;
-import org.wpilib.vision.apriltag.AprilTagFields;
+import org.wpilib.fields.Field;
+import org.wpilib.fields.Fields;
 import org.wpilib.math.geometry.Pose2d;
 import org.wpilib.math.geometry.Translation2d;
 import org.wpilib.math.geometry.Translation3d;
 import org.wpilib.math.util.Units;
 
 public class FieldConstants {
-    public static final AprilTagFieldLayout apriltagLayout = AprilTagFieldLayout
-            .loadField(AprilTagFields.k2026RebuiltWelded);
+    public static final Field apriltagLayout = Field
+            .loadField(Fields.FRC_2026_REBUILT_WELDED);
 
     public static final double fieldLength = apriltagLayout.getFieldLength();
     public static final double fieldWidth = apriltagLayout.getFieldWidth();

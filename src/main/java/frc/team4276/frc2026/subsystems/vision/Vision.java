@@ -22,7 +22,7 @@ import org.wpilib.math.numbers.N1;
 import org.wpilib.math.numbers.N3;
 import org.wpilib.util.Alert;
 import org.wpilib.util.Alert.Level;
-import org.wpilib.command3.SubsystemBase;
+import org.wpilib.command3.Mechanism;
 import frc.team4276.frc2026.FieldConstants;
 import frc.team4276.frc2026.RobotState;
 import frc.team4276.frc2026.RobotState.FuelTxTyObservation;
@@ -43,7 +43,7 @@ import org.littletonrobotics.junction.Logger;
  * 
  */
 
-public class Vision extends SubsystemBase {
+public class Vision implements Mechanism {
   private final VisionConsumer consumer;
   private final VisionIO[] io;
   private final VisionIOInputsAutoLogged[] inputs;
@@ -63,12 +63,15 @@ public class Vision extends SubsystemBase {
     this.disconnectedAlerts = new Alert[io.length];
     for (int i = 0; i < inputs.length; i++) {
       disconnectedAlerts[i] = new Alert(
-          "Vision camera " + Integer.toString(i) + " is disconnected.", Level.MEDIUM);
+          "Vision", "Vision camera " + Integer.toString(i) + " is disconnected.", Level.MEDIUM);
     }
+
+    // Sensor reads and logging only, no mechanism actuation - runs unconditionally
+    // every tick just like the old subsystem periodic().
+    getRegisteredScheduler().addPeriodic(this::periodic);
   }
 
-  @Override
-  public void periodic() {
+  private void periodic() {
     for (int i = 0; i < io.length; i++) {
       io[i].updateInputs(inputs[i]);
       Logger.processInputs("Vision/Camera" + Integer.toString(i), inputs[i]);

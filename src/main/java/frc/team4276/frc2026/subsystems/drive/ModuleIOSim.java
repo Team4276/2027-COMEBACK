@@ -2,22 +2,25 @@ package frc.team4276.frc2026.subsystems.drive;
 
 import static frc.team4276.frc2026.subsystems.drive.DriveConstants.*;
 
-import org.wpilib.math.util.MathUtil;
 import org.wpilib.math.controller.PIDController;
 import org.wpilib.math.geometry.Rotation2d;
-import org.wpilib.math.system.LinearSystemId;
+import org.wpilib.math.system.Models;
 import org.wpilib.system.Timer;
 import org.wpilib.simulation.DCMotorSim;
 
 /** Physics sim implementation of module IO. */
 public class ModuleIOSim implements ModuleIO {
+  // LinearSystemId was removed in 2027 - Models.singleJointedArmFromPhysicalConstants(...)
+  // is the replacement (same (DCMotor, momentOfInertia, gearing) signature as the old
+  // LinearSystemId.createDCMotorSystem(...) - a bare spinning motor is mathematically a
+  // single-jointed arm without gravity).
   private final DCMotorSim driveSim =
       new DCMotorSim(
-          LinearSystemId.createDCMotorSystem(driveGearbox, 0.025, driveMotorReduction),
+          Models.singleJointedArmFromPhysicalConstants(driveGearbox, 0.025, driveMotorReduction),
           driveGearbox);
   private final DCMotorSim turnSim =
       new DCMotorSim(
-          LinearSystemId.createDCMotorSystem(turnGearbox, 0.004, turnMotorReduction), turnGearbox);
+          Models.singleJointedArmFromPhysicalConstants(turnGearbox, 0.004, turnMotorReduction), turnGearbox);
 
   private boolean driveClosedLoop = false;
   private boolean turnClosedLoop = false;
@@ -38,12 +41,12 @@ public class ModuleIOSim implements ModuleIO {
     // Run closed-loop control
     if (driveClosedLoop) {
       driveAppliedVolts =
-          driveFFVolts + driveController.calculate(driveSim.getAngularVelocityRadPerSec());
+          driveFFVolts + driveController.calculate(driveSim.getAngularVelocity());
     } else {
       driveController.reset();
     }
     if (turnClosedLoop) {
-      turnAppliedVolts = turnController.calculate(turnSim.getAngularPositionRad());
+      turnAppliedVolts = turnController.calculate(turnSim.getAngularPosition());
     } else {
       turnController.reset();
     }
@@ -56,17 +59,17 @@ public class ModuleIOSim implements ModuleIO {
 
     // Update drive inputs
     inputs.driveConnected = true;
-    inputs.drivePositionRad = driveSim.getAngularPositionRad();
-    inputs.driveVelocityRadPerSec = driveSim.getAngularVelocityRadPerSec();
+    inputs.drivePositionRad = driveSim.getAngularPosition();
+    inputs.driveVelocityRadPerSec = driveSim.getAngularVelocity();
     inputs.driveAppliedVolts = driveAppliedVolts;
-    inputs.driveCurrentAmps = Math.abs(driveSim.getCurrentDrawAmps());
+    inputs.driveCurrentAmps = Math.abs(driveSim.getCurrentDraw());
 
     // Update turn inputs
     inputs.turnConnected = true;
-    inputs.turnPosition = new Rotation2d(turnSim.getAngularPositionRad());
-    inputs.turnVelocityRadPerSec = turnSim.getAngularVelocityRadPerSec();
+    inputs.turnPosition = new Rotation2d(turnSim.getAngularPosition());
+    inputs.turnVelocityRadPerSec = turnSim.getAngularVelocity();
     inputs.turnAppliedVolts = turnAppliedVolts;
-    inputs.turnCurrentAmps = Math.abs(turnSim.getCurrentDrawAmps());
+    inputs.turnCurrentAmps = Math.abs(turnSim.getCurrentDraw());
 
     // Update odometry inputs (50Hz because high-frequency odometry in sim doesn't
     // matter)

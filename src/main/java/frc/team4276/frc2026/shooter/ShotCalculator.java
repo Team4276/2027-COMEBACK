@@ -95,12 +95,14 @@ public class ShotCalculator {
     // Calculate estimated pose while accounting for phase delay
     Pose2d estimatedPose = RobotState.getInstance().getEstimatedPose();
     ChassisVelocities robotRelativeVelocity = RobotState.getInstance().getFieldVelocity();
+    // Pose2d.exp(Twist2d) is gone - Twist2d.exp() now converts itself to a Transform2d,
+    // applied via Pose2d.plus(Transform2d).
     estimatedPose =
-        estimatedPose.exp(
+        estimatedPose.plus(
             new Twist2d(
                 robotRelativeVelocity.vx * phaseDelay,
                 robotRelativeVelocity.vy * phaseDelay,
-                robotRelativeVelocity.omega * phaseDelay));
+                robotRelativeVelocity.omega * phaseDelay).exp());
 
     // Calculate distance from turret to target
     Translation2d target =
@@ -138,7 +140,11 @@ public class ShotCalculator {
     }
 
     // Calculate parameters accounted for imparted velocity
-    turretAngle = target.minus(lookaheadPose.getTranslation()).getAngle();
+    // Translation2d.getAngle() now returns Optional<Rotation2d> (undefined for a
+    // zero-length vector, i.e. the lookahead pose landing exactly on the target); fall back
+    // to the previous turret angle rather than snapping to zero.
+    turretAngle = target.minus(lookaheadPose.getTranslation()).getAngle()
+        .orElse(lastTurretAngle != null ? lastTurretAngle : Rotation2d.ZERO);
     hoodAngle = shotHoodAngleMap.get(lookaheadTurretToTargetDistance).getRadians();
     if (lastTurretAngle == null) lastTurretAngle = turretAngle;
     if (Double.isNaN(lastHoodAngle)) lastHoodAngle = hoodAngle;

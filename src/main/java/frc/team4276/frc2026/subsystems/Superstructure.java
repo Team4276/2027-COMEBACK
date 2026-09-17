@@ -6,15 +6,10 @@ import org.littletonrobotics.junction.Logger;
 
 import org.wpilib.math.geometry.Rotation2d;
 import org.wpilib.driverstation.MatchState;
-import org.wpilib.driverstation.RobotState;
-import org.wpilib.driverstation.Alliance;
-import org.wpilib.driverstation.MatchType;
-import org.wpilib.driverstation.DriverStationErrors;
 import org.wpilib.driverstation.GenericHID.RumbleType;
 import org.wpilib.command3.Command;
-import org.wpilib.command3.Commands;
-import org.wpilib.command3.SubsystemBase;
-import org.wpilib.command3.button.Trigger;
+import org.wpilib.command3.Mechanism;
+import org.wpilib.command3.Trigger;
 import frc.team4276.frc2026.RobotState;
 import frc.team4276.frc2026.FieldConstants.FieldZone;
 import frc.team4276.frc2026.shooter.ShotCalculator;
@@ -32,7 +27,7 @@ import frc.team4276.frc2026.subsystems.vision.Vision;
 import frc.team4276.lib.geometry.AllianceFlipUtil;
 import frc.team4276.lib.hid.ViXController;
 
-public class Superstructure extends SubsystemBase {
+public class Superstructure implements Mechanism {
   private final Drive drive;
   private final Intake intake;
   private final Spindexer spindexer;
@@ -82,12 +77,16 @@ public class Superstructure extends SubsystemBase {
     this.controller = controller;
 
     activeRumble
-        .onTrue(this.controller.rumbleCommand(RumbleType.kBothRumble, 0.5, 0.25, 3))
-        .onFalse(this.controller.rumbleCommand(RumbleType.kBothRumble, 0.5, 1.0, 1));
+        .onTrue(this.controller.rumbleCommand(0.5, 0.25, 3, RumbleType.LEFT_RUMBLE, RumbleType.RIGHT_RUMBLE))
+        .onFalse(this.controller.rumbleCommand(0.5, 1.0, 1, RumbleType.LEFT_RUMBLE, RumbleType.RIGHT_RUMBLE));
+
+    // State bookkeeping only - no direct hardware IO here, just setters consumed by the
+    // other mechanisms' own default commands - so this runs unconditionally every tick
+    // just like the old subsystem periodic(), same precedent as Drive/Vision.
+    getRegisteredScheduler().addPeriodic(this::periodic);
   }
 
-  @Override
-  public void periodic() {
+  private void periodic() {
     if (shooterAtSetpoint()) {
       if (feedState == FeedState.ACTIVE && isHubActive()) {
         feeder.setSystemState(Feeder.SystemState.FEED);
@@ -123,7 +122,7 @@ public class Superstructure extends SubsystemBase {
   public boolean isHubActive() {
     double matchTime = MatchState.getMatchTime();
 
-    if (RobotState.isAutonomous() || matchTime > 130 || matchTime < 30) {
+    if (org.wpilib.driverstation.RobotState.isAutonomous() || matchTime > 130 || matchTime < 30) {
       return true;
     }
 
@@ -139,15 +138,17 @@ public class Superstructure extends SubsystemBase {
   }
 
   public Command deployIntake() {
-    return Commands.runOnce(() -> intake.setWantedState(Intake.WantedState.INTAKE));
+    return Command.noRequirements(coroutine -> intake.setWantedState(Intake.WantedState.INTAKE))
+        .named("DeployIntake");
   }
 
   public Command retractIntake() {
-    return Commands.runOnce(() -> intake.setWantedState(Intake.WantedState.RETRACT));
+    return Command.noRequirements(coroutine -> intake.setWantedState(Intake.WantedState.RETRACT))
+        .named("RetractIntake");
   }
 
   public Command enableShooter() { // auto aim
-    return Commands.runOnce(() -> {
+    return Command.noRequirements(coroutine -> {
       if (RobotState.getInstance().getCurrentFieldZone() == FieldZone.ALLIANCE) {
         shootingParams = ShotCalculator.getInstance()::getHubParameters;
 
@@ -161,14 +162,14 @@ public class Superstructure extends SubsystemBase {
       }
     })
     // .alongWith(
-    //     Commands.waitSeconds(1.0)
-    //         .andThen(Commands.runOnce(() -> drive.setVelocityScalar(DriveSpeedScalar.DEFAULT)))
-    //         .finallyDo(() -> drive.setVelocityScalar(DriveSpeedScalar.CRAWL)))
-            ;
+    //     Command.waitFor(Seconds.of(1.0))
+    //         .andThen(Command.noRequirements(coroutine -> drive.setVelocityScalar(DriveSpeedScalar.DEFAULT)))
+    //         .whenCanceled(() -> drive.setVelocityScalar(DriveSpeedScalar.CRAWL)))
+            .named("EnableShooter");
   }
 
   public Command disableShooter() { // stop feeding; keep inertia and target
-    return Commands.runOnce(() -> {
+    return Command.noRequirements(coroutine -> {
       if (RobotState.getInstance().getCurrentFieldZone() == FieldZone.ALLIANCE) {
         shootingParams = ShotCalculator.getInstance()::getHubParameters;
 
@@ -179,18 +180,18 @@ public class Superstructure extends SubsystemBase {
 
       feedState = FeedState.NO;
 
-    });
+    }).named("DisableShooter");
   }
 
   public Command shootPreset(ParamPreset preset) { // rev up a few secs before active period; auto shoots once it begins
-    return Commands.runOnce(() -> {
+    return Command.noRequirements(coroutine -> {
       currPreset = preset;
       shootingParams = currPreset::getParams;
 
       if (preset == ParamPreset.SHOWER || preset == ParamPreset.SHUB) {
         feedState = FeedState.ACTIVE;
 
-        // drive.setHeadingAlignRotation(AllianceFlipUtil.apply(Rotation2d.kPi));
+        // drive.setHeadingAlignRotation(AllianceFlipUtil.apply(Rotation2d.PI));
 
       } else if (preset == ParamPreset.SHERRY) {
         feedState = FeedState.FERRY;
@@ -198,15 +199,15 @@ public class Superstructure extends SubsystemBase {
         // drive.setHeadingAlignRotation(AllianceFlipUtil.apply(Rotation2d.ZERO));
 
       }
-    });
+    }).named("ShootPreset");
   }
 
   public Command turtle() { // go under trench
-    return Commands.runOnce(() -> {
+    return Command.noRequirements(coroutine -> {
       intake.setWantedState(Intake.WantedState.INTAKE);
       currPreset = ParamPreset.TURTLE;
       shootingParams = currPreset::getParams;
       feedState = FeedState.NO;
-    });
+    }).named("Turtle");
   }
 }

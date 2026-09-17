@@ -9,6 +9,24 @@ java {
     targetCompatibility = JavaVersion.VERSION_25
 }
 
+// PhotonVision's only current 2027 build (alpha-2) was compiled against WPILib's
+// AprilTagFieldLayout type, which was removed before alpha-7 (replaced by
+// org.wpilib.fields.Field). PhotonPoseEstimator's constructor hard-requires that deleted
+// type - a genuine ABI break inside PhotonVision's own compiled code (confirmed by
+// compiling against it directly), not something fixable from our side. Excluding the one
+// integration point from compilation instead of deleting it. Re-include once PhotonVision
+// ships a real alpha-7-targeted build: remove this block, add back
+// "import frc.team4276.frc2026.subsystems.vision.VisionIOPhotonVision;" in
+// RobotContainer.java, and swap the COMPBOT branch's no-op VisionIO instances back to
+// "new VisionIOPhotonVision(0)" / "new VisionIOPhotonVision(1)".
+sourceSets {
+    main {
+        java {
+            exclude "frc/team4276/frc2026/subsystems/vision/VisionIOPhotonVision.java"
+        }
+    }
+}
+
 def ROBOT_MAIN_CLASS = "frc.team4276.frc2026.Main"
 
 // Define my targets (SystemCore) and artifacts (deployable files)
@@ -59,8 +77,16 @@ def includeDesktopSupport = false
 // Also defines JUnit 5.
 dependencies {
     annotationProcessor wpi.java.deps.wpilibAnnotations()
+    // AdvantageKit's @AutoLog processor - its vendordep only declares the runtime
+    // akit-java dependency, not this; it has to be added explicitly (standard AdvantageKit
+    // project pattern), pinned to the same version as vendordeps/AdvantageKit.json.
+    annotationProcessor 'org.littletonrobotics.akit:akit-autolog:27.0.0-alpha-5'
     implementation wpi.java.deps.wpilib()
     implementation wpi.java.vendor.java()
+
+    // Jackson is no longer bundled transitively by WPILib in 2027 - Elastic.java uses it
+    // directly for dashboard notification JSON.
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.2'
 
     systemcoreDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.systemcore)
     systemcoreDebug wpi.java.vendor.jniDebug(wpi.platforms.systemcore)

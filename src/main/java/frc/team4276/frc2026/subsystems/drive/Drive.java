@@ -15,22 +15,17 @@ import org.wpilib.math.geometry.Translation2d;
 import org.wpilib.math.kinematics.ChassisVelocities;
 import org.wpilib.math.kinematics.SwerveDriveKinematics;
 import org.wpilib.math.kinematics.SwerveModulePosition;
-import org.wpilib.math.kinematics.SwerveModuleState;
+import org.wpilib.math.kinematics.SwerveModuleVelocity;
 import org.wpilib.math.util.Units;
-import org.wpilib.driverstation.MatchState;
-import org.wpilib.driverstation.RobotState;
-import org.wpilib.driverstation.Alliance;
-import org.wpilib.driverstation.MatchType;
-import org.wpilib.driverstation.DriverStationErrors;
-import org.wpilib.smartdashboard.SmartDashboard;
-import org.wpilib.command3.SubsystemBase;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
+import org.wpilib.command3.Mechanism;
 import frc.team4276.frc2026.Constants;
 import frc.team4276.frc2026.RobotState;
 import frc.team4276.lib.dashboard.LoggedTunablePID;
 import frc.team4276.lib.geometry.AllianceFlipUtil;
 import frc.team4276.lib.hid.JoystickOutputController;
 
-public class Drive extends SubsystemBase {
+public class Drive implements Mechanism {
   public enum WantedState {
     TELEOP,
     PATH,
@@ -101,6 +96,12 @@ public class Drive extends SubsystemBase {
 
   private DriveSpeedScalar driveSpeedScalar = Constants.isDemo ? DriveSpeedScalar.DEMO : DriveSpeedScalar.DEFAULT;
 
+  // SmartDashboard no longer exists in 2027 - LoggedNetworkNumber is the replay-safe
+  // NT-backed equivalent for a dashboard-editable value that's also read back.
+  private final LoggedNetworkNumber customAlignX = new LoggedNetworkNumber("CustomAlignX", Double.NaN);
+  private final LoggedNetworkNumber customAlignY = new LoggedNetworkNumber("CustomAlignY", Double.NaN);
+  private final LoggedNetworkNumber customAlignRot = new LoggedNetworkNumber("CustomAlignRot", Double.NaN);
+
   public Drive(
       JoystickOutputController controller,
       GyroIO gyroIO,
@@ -119,13 +120,15 @@ public class Drive extends SubsystemBase {
     SparkOdometryThread.getInstance().start();
     PhoenixOdometryThread.getInstance().start();
 
-    SmartDashboard.putNumber("CustomAlignX", Double.NaN);
-    SmartDashboard.putNumber("CustomAlignY", Double.NaN);
-    SmartDashboard.putNumber("CustomAlignRot", Double.NaN);
+    // Preserves the exact v2 behavior: this always ran every cycle regardless of
+    // robot-enable state and was never gated by command scheduling (setWantedState()
+    // is a plain field set, not a scheduled command). command3's Scheduler has no
+    // built-in disabled-state gating of its own, so a sideload that runs
+    // unconditionally every tick is the faithful equivalent - not a default command.
+    getRegisteredScheduler().addPeriodic(this::periodic);
   }
 
-  @Override
-  public void periodic() {
+  private void periodic() {
     odometryLock.lock(); // Prevents odometry updates while reading data
     gyroIO.updateInputs(gyroInputs);
     Logger.processInputs("Drive/Gyro", gyroInputs);
@@ -134,17 +137,17 @@ public class Drive extends SubsystemBase {
     }
     odometryLock.unlock();
 
-    if (RobotState.isDisabled()) {
+    if (org.wpilib.driverstation.RobotState.isDisabled()) {
       // Stop moving when disabled
       for (var module : modules) {
         module.stop();
       }
 
       // Log empty setpoint states when disabled
-      Logger.recordOutput("Drive/SwerveStates/OptimizedSetpoints", new SwerveModuleState[] {});
-      Logger.recordOutput("Drive/SwerveStates/Torques", new SwerveModuleState[] {});
+      Logger.recordOutput("Drive/SwerveStates/OptimizedSetpoints", new SwerveModuleVelocity[] {});
+      Logger.recordOutput("Drive/SwerveStates/Torques", new SwerveModuleVelocity[] {});
       if (Constants.isTuning) {
-        SwerveModuleState[] states = new SwerveModuleState[4];
+        SwerveModuleVelocity[] states = new SwerveModuleVelocity[4];
         for (int i = 0; i < 4; i++) {
           states[i] = modules[i].getZeroHelperModuleState();
         }
@@ -175,7 +178,7 @@ public class Drive extends SubsystemBase {
       if (lastModulePositions != null) {
         double dt = sampleTimestamps[i] - lastTime;
         for (int j = 0; j < modules.length; j++) {
-          double velocity = (modulePositions[j].distanceMeters - lastModulePositions[j].distanceMeters) / dt;
+          double velocity = (modulePositions[j].distance - lastModulePositions[j].distance) / dt;
           double omega = modulePositions[j].angle.minus(lastModulePositions[j].angle).getRadians() / dt;
           // Check if delta is too large
           if (Math.abs(velocity) > DriveConstants.maxVelocityMPS * 1.5
@@ -257,7 +260,7 @@ public class Drive extends SubsystemBase {
         if (translationLinearError < teleopAutoAlignController.getErrorTolerance()) {
           translationLinearOutput = 0.0;
 
-        } else if (RobotState.isAutonomous()) {
+        } else if (org.wpilib.driverstation.RobotState.isAutonomous()) {
           translationLinearOutput = Math.abs(autoAutoAlignController.calculate(translationLinearError, 0.0))
               + autoAlignStaticFrictionConstant;
 
@@ -268,8 +271,12 @@ public class Drive extends SubsystemBase {
 
         translationLinearOutput = Math.min(translationLinearOutput, maxAutoAlignDriveTranslationOutput);
 
-        double vx = translationLinearOutput * translationError.getAngle().getCos();
-        double vy = translationLinearOutput * translationError.getAngle().getSin();
+        // Translation2d.getAngle() now returns Optional<Rotation2d> (undefined when
+        // translationError is exactly zero) - translationLinearOutput is already zeroed in
+        // that case above, so any fallback angle here is multiplied by ~0 regardless.
+        Rotation2d translationErrorAngle = translationError.getAngle().orElse(Rotation2d.ZERO);
+        double vx = translationLinearOutput * translationErrorAngle.getCos();
+        double vy = translationLinearOutput * translationErrorAngle.getSin();
 
         double autoAlignThetaError = MathUtil.angleModulus(
             currentPose.getRotation().minus(desiredAutoAlignPose.getRotation()).getRadians());
@@ -288,26 +295,29 @@ public class Drive extends SubsystemBase {
         break;
     }
 
-    requestedSpeeds = ChassisVelocities.fromFieldRelativeSpeeds(requestedSpeeds, currentPose.getRotation());
+    requestedSpeeds = requestedSpeeds.toRobotRelative(currentPose.getRotation());
 
-    SwerveModuleState[] setpointStates;
+    SwerveModuleVelocity[] setpointStates;
     ChassisVelocities setpointSpeeds;
 
-    setpointSpeeds = ChassisVelocities.discretize(requestedSpeeds, 0.02);
-    setpointStates = kinematics.toSwerveModuleStates(setpointSpeeds);
-    SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, maxVelocityMPS);
+    setpointSpeeds = requestedSpeeds.discretize(0.02);
+    setpointStates = kinematics.toSwerveModuleVelocities(setpointSpeeds);
+    setpointStates = SwerveDriveKinematics.desaturateWheelVelocities(setpointStates, maxVelocityMPS);
 
-    // Send setpoints to modules
+    // Send setpoints to modules. runSetpoint() returns the optimized state it actually
+    // applied (SwerveModuleVelocity.optimize() returns a new instance rather than mutating
+    // in place, unlike the old SwerveModuleState.optimize()), so capture it back into
+    // setpointStates for the logging below to reflect what was actually commanded.
     for (int i = 0; i < 4; i++) {
-      modules[i].runSetpoint(setpointStates[i]);
+      setpointStates[i] = modules[i].runSetpoint(setpointStates[i]);
     }
 
-    // Log optimized setpoints (runSetpoint mutates each state)
+    // Log optimized setpoints
     Logger.recordOutput("Drive/RequestedSpeeds", requestedSpeeds);
     Logger.recordOutput("Drive/SetpointSpeeds", setpointSpeeds);
     Logger.recordOutput(
         "Drive/SwerveStates/UnoptimizedSetpoints",
-        kinematics.toSwerveModuleStates(ChassisVelocities.discretize(requestedSpeeds, 0.02)));
+        kinematics.toSwerveModuleVelocities(requestedSpeeds.discretize(0.02)));
     Logger.recordOutput("Drive/SwerveStates/OptimizedSetpoints", setpointStates);
   }
 
@@ -333,12 +343,11 @@ public class Drive extends SubsystemBase {
         -controller.getRightWithDeadband().x)
         * driveSpeedScalar.angularVelocityScalar;
 
-    return ChassisVelocities.fromFieldRelativeSpeeds(
-        new ChassisVelocities(
+    return new ChassisVelocities(
             linearVelocity.getX() * DriveConstants.maxVelocityMPS,
             linearVelocity.getY() * DriveConstants.maxVelocityMPS,
-            omega * DriveConstants.maxAngularVelocity),
-        AllianceFlipUtil.apply(Rotation2d.k180deg));
+            omega * DriveConstants.maxAngularVelocity)
+        .toRobotRelative(AllianceFlipUtil.apply(Rotation2d.k180deg));
   }
 
   /**
@@ -346,8 +355,8 @@ public class Drive extends SubsystemBase {
    * modules.
    */
   @AutoLogOutput(key = "Drive/SwerveStates/Measured")
-  private SwerveModuleState[] getModuleStates() {
-    SwerveModuleState[] states = new SwerveModuleState[4];
+  private SwerveModuleVelocity[] getModuleStates() {
+    SwerveModuleVelocity[] states = new SwerveModuleVelocity[4];
     for (int i = 0; i < 4; i++) {
       states[i] = modules[i].getState();
     }
@@ -364,9 +373,9 @@ public class Drive extends SubsystemBase {
   }
 
   public void setAutoAlignCustom() {
-    double x = SmartDashboard.getNumber("CustomAlignX", Double.NaN);
-    double y = SmartDashboard.getNumber("CustomAlignY", Double.NaN);
-    double rot = SmartDashboard.getNumber("CustomAlignRot", Double.NaN);
+    double x = customAlignX.get();
+    double y = customAlignY.get();
+    double rot = customAlignRot.get();
 
     if (x != Double.NaN && y != Double.NaN && rot != Double.NaN) {
       setAutoAlignPose(new Pose2d(x, y, Rotation2d.fromDegrees(rot)));

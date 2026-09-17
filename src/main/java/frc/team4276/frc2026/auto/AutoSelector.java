@@ -1,26 +1,30 @@
 package frc.team4276.frc2026.auto;
 
-import org.wpilib.driverstation.MatchState;
 import org.wpilib.driverstation.RobotState;
-import org.wpilib.driverstation.Alliance;
-import org.wpilib.driverstation.MatchType;
-import org.wpilib.driverstation.DriverStationErrors;
-import org.wpilib.smartdashboard.SmartDashboard;
+import static org.wpilib.units.Units.Seconds;
+
 import org.wpilib.command3.Command;
-import org.wpilib.command3.Commands;
 import frc.team4276.lib.VirtualSubsystem;
 import frc.team4276.lib.geometry.AllianceFlipUtil;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedNetworkChooser;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class AutoSelector extends VirtualSubsystem {
   private final AutoFactory autoFactory;
 
-  private final LoggedDashboardChooser<Supplier<Command>> routineChooser =
-      new LoggedDashboardChooser<>("Comp/Auto/RoutineChooser");
-  private Supplier<Command> lastRoutine = () -> Commands.none();
+  // LoggedDashboardChooser was renamed to LoggedNetworkChooser and no longer exposes the
+  // underlying dashboard widget (no getSendableChooser()), so option names are tracked
+  // separately here for the "what changed" / telemetry logic below.
+  private final LoggedNetworkChooser<Supplier<Command>> routineChooser =
+      new LoggedNetworkChooser<>("Comp/Auto/RoutineChooser");
+  private final Map<Supplier<Command>, String> routineNames = new HashMap<>();
+  private Supplier<Command> lastRoutine =
+      () -> Command.noRequirements(coroutine -> {}).named("None");
   private String lastRoutineName = "";
 
   private static boolean autoChanged = true;
@@ -30,15 +34,32 @@ public class AutoSelector extends VirtualSubsystem {
   public AutoSelector(AutoFactory autoFactory) {
     this.autoFactory = autoFactory;
 
-    routineChooser.addDefaultOption("Do Nothing", () -> this.autoFactory.idle());
+    addDefaultOption("Do Nothing", () -> this.autoFactory.idle());
   }
 
-  /** Returns the selected auto command with the inputted delay. */
+  private void addDefaultOption(String name, Supplier<Command> routine) {
+    routineNames.put(routine, name);
+    routineChooser.addDefault(name, routine);
+  }
+
+  /**
+   * Returns the selected auto command with the inputted delay. {@code autoFactory.autoEnd()} is
+   * called whether the routine finishes naturally (end of the command body) or is canceled early
+   * (e.g. driver switches to teleop) - command3 has no direct .finallyDo() equivalent, so both
+   * exit paths are handled explicitly: normal completion inline, cancellation via
+   * whenCanceled().
+   */
   public Command getCommand() {
-    return lastRoutine
-        .get()
-        .beforeStarting(Commands.waitSeconds(getDelayInput()))
-        .finallyDo(() -> this.autoFactory.autoEnd());
+    Supplier<Command> routine = lastRoutine;
+    double delaySeconds = getDelayInput();
+
+    return Command.noRequirements(coroutine -> {
+      coroutine.wait(Seconds.of(delaySeconds));
+      coroutine.await(routine.get());
+      autoFactory.autoEnd();
+    })
+        .whenCanceled(() -> autoFactory.autoEnd())
+        .named("Auto");
   }
 
   public double getDelayInput() {
@@ -53,24 +74,22 @@ public class AutoSelector extends VirtualSubsystem {
       return;
     }
 
-    SmartDashboard.putNumber("Comp/Auto/Delay Input Submitted ", getDelayInput());
-
-    // Update the list of questions
-    var routineName = routineChooser.getSendableChooser().getSelected();
+    Logger.recordOutput("Comp/Auto/Delay Input Submitted ", getDelayInput());
 
     // Update the routine and responses
-    if (lastRoutineName != routineName) {
-      var selectedRoutine = routineChooser.get();
+    var selectedRoutine = routineChooser.get();
+
+    if (lastRoutine != selectedRoutine) {
       if (selectedRoutine == null) {
         return;
       }
 
       lastRoutine = selectedRoutine;
-      lastRoutineName = routineName;
+      lastRoutineName = routineNames.getOrDefault(selectedRoutine, "");
       autoChanged = true;
     }
 
-    SmartDashboard.putString("Comp/Auto/Routine Submitted ", lastRoutineName);
+    Logger.recordOutput("Comp/Auto/Routine Submitted ", lastRoutineName);
 
     if (AllianceFlipUtil.shouldFlip() != wasRed) {
       autoChanged = true;

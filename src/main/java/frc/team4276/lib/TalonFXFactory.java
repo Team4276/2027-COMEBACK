@@ -1,5 +1,6 @@
 package frc.team4276.lib;
 
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -68,7 +69,9 @@ public class TalonFXFactory {
     }
 
     private static TalonFX createTalon(int id) {
-        TalonFX talon = new TalonFX(id);
+        // CAN devices now take an explicit CANBus; new CANBus() resolves to the system
+        // default ("can_s1" on real SystemCore hardware).
+        TalonFX talon = new TalonFX(id, new CANBus());
         talon.clearStickyFaults();
 
         return talon;

@@ -4,18 +4,17 @@ import org.wpilib.math.geometry.Pose2d;
 import org.wpilib.math.geometry.Rotation2d;
 import org.wpilib.math.geometry.Translation2d;
 import org.wpilib.driverstation.MatchState;
-import org.wpilib.driverstation.RobotState;
 import org.wpilib.driverstation.Alliance;
-import org.wpilib.driverstation.MatchType;
-import org.wpilib.driverstation.DriverStationErrors;
-import org.wpilib.smartdashboard.SmartDashboard;
+import org.littletonrobotics.junction.networktables.LoggedNetworkBoolean;
 import frc.team4276.frc2026.Constants;
 import frc.team4276.frc2026.FieldConstants;
 
 public class AllianceFlipUtil {
-  static {
-    SmartDashboard.putBoolean("Sim/OverrideFlip", false);
-  }
+  // SmartDashboard no longer exists in 2027 - LoggedNetworkBoolean is the
+  // replay-safe NT-backed equivalent already used elsewhere in this codebase
+  // (e.g. AutoSelector's delayInput).
+  private static final LoggedNetworkBoolean overrideFlipInput =
+      new LoggedNetworkBoolean("Sim/OverrideFlip", false);
 
   private static boolean overrideFlip = true;
 
@@ -32,7 +31,7 @@ public class AllianceFlipUtil {
   }
 
   public static Rotation2d flip(Rotation2d rotation) {
-    return rotation.rotateBy(Rotation2d.kPi);
+    return rotation.rotateBy(Rotation2d.PI);
   }
 
   public static Pose2d flip(Pose2d pose) {
@@ -54,7 +53,7 @@ public class AllianceFlipUtil {
   }
 
   public static Rotation2d apply(Rotation2d rotation) {
-    return shouldFlip() ? rotation.rotateBy(Rotation2d.kPi) : rotation;
+    return shouldFlip() ? rotation.rotateBy(Rotation2d.PI) : rotation;
   }
 
   public static Pose2d apply(Pose2d pose) {
@@ -70,10 +69,11 @@ public class AllianceFlipUtil {
    */
   public static void overrideFlip(boolean shouldOverrideFlip) {
     overrideFlip = shouldOverrideFlip;
+    overrideFlipInput.set(shouldOverrideFlip);
   }
 
   public static boolean shouldFlip() {
-    overrideFlip = SmartDashboard.getBoolean("Sim/OverrideFlip", overrideFlip);
+    overrideFlip = overrideFlipInput.get();
 
     return MatchState.getAlliance().isPresent()
         && MatchState.getAlliance().get() == Alliance.RED

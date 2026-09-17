@@ -2,7 +2,7 @@ package frc.team4276.frc2026.subsystems.drive;
 
 import org.wpilib.math.geometry.Rotation2d;
 import org.wpilib.math.kinematics.SwerveModulePosition;
-import org.wpilib.math.kinematics.SwerveModuleState;
+import org.wpilib.math.kinematics.SwerveModuleVelocity;
 import org.wpilib.util.Alert;
 import org.wpilib.util.Alert.Level;
 
@@ -24,10 +24,12 @@ public class Module {
     this.index = index;
     driveDisconnectedAlert =
         new Alert(
+            "Drive",
             "Disconnected drive motor on module " + Integer.toString(index) + ".",
             Level.HIGH);
     turnDisconnectedAlert =
         new Alert(
+            "Drive",
             "Disconnected turn motor on module " + Integer.toString(index) + ".", Level.HIGH);
   }
 
@@ -49,14 +51,21 @@ public class Module {
     turnDisconnectedAlert.set(!inputs.turnConnected);
   }
 
-  /** Runs the module with the specified setpoint state. Mutates the state to optimize it. */
-  public void runSetpoint(SwerveModuleState state) {
+  /**
+   * Runs the module with the specified setpoint state, returning the optimized state that was
+   * actually applied. SwerveModuleVelocity.optimize() returns a new instance rather than
+   * mutating in place (unlike the old SwerveModuleState.optimize()), so callers that want to
+   * know/log what was actually commanded need to capture this return value.
+   */
+  public SwerveModuleVelocity runSetpoint(SwerveModuleVelocity state) {
     // Optimize state
-    state.optimize(inputs.turnPosition);
+    state = state.optimize(inputs.turnPosition);
 
     // Apply setpoints
     io.runDriveVelocitySetpoint(state.velocity / wheelRadiusMeters);
     io.setTurnPosition(state.angle);
+
+    return state;
   }
 
   /** Runs the module with the specified output while controlling to zero degrees. */
@@ -92,8 +101,8 @@ public class Module {
   }
 
   /** Returns the module state (turn angle and drive velocity). */
-  public SwerveModuleState getState() {
-    return new SwerveModuleState(getVelocityMetersPerSec(), getAngle());
+  public SwerveModuleVelocity getState() {
+    return new SwerveModuleVelocity(getVelocityMetersPerSec(), getAngle());
   }
 
   /** Returns the module positions received this cycle. */
@@ -116,7 +125,7 @@ public class Module {
     return inputs.driveVelocityRadPerSec;
   }
 
-  public SwerveModuleState getZeroHelperModuleState() {
-    return new SwerveModuleState(getVelocityMetersPerSec(), inputs.zeroHelperTurnPosition);
+  public SwerveModuleVelocity getZeroHelperModuleState() {
+    return new SwerveModuleVelocity(getVelocityMetersPerSec(), inputs.zeroHelperTurnPosition);
   }
 }

@@ -6,7 +6,7 @@ import static frc.team4276.lib.SparkUtil.*;
 import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.ClosedLoopSlot;
-import com.revrobotics.spark.SparkBase.ControlType;
+import com.revrobotics.spark.SparkLowLevel.ControlType;
 import com.revrobotics.ResetMode;
 import com.revrobotics.PersistMode;
 import com.revrobotics.spark.SparkClosedLoopController;
@@ -19,11 +19,12 @@ import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
+import org.wpilib.hardware.bus.CANPort;
 import org.wpilib.math.util.MathUtil;
 import org.wpilib.math.filter.Debouncer;
 import org.wpilib.math.geometry.Rotation2d;
+import java.util.List;
 import java.util.Queue;
-import java.util.function.DoubleSupplier;
 
 /**
  * Module IO implementation for Spark Max drive motor controller, Spark Max turn
@@ -72,7 +73,10 @@ public class ModuleIOSpark implements ModuleIO {
       case 3 -> backRightZeroHelperRotation;
       default -> Rotation2d.ZERO;
     };
+    // CAN devices now take an explicit CANPort (SystemCore can host multiple CAN
+    // networks); CAN_S1 is the system default bus.
     driveSpark = new SparkFlex(
+        CANPort.CAN_S1,
         switch (module) {
           case 0 -> frontLeftDriveCanId;
           case 1 -> frontRightDriveCanId;
@@ -82,6 +86,7 @@ public class ModuleIOSpark implements ModuleIO {
         },
         MotorType.kBrushless);
     turnSpark = new SparkMax(
+        CANPort.CAN_S1,
         switch (module) {
           case 0 -> frontLeftTurnCanId;
           case 1 -> frontRightTurnCanId;
@@ -174,7 +179,7 @@ public class ModuleIOSpark implements ModuleIO {
     ifOk(driveSpark, driveEncoder::getVelocity, (value) -> inputs.driveVelocityRadPerSec = value);
     ifOk(
         driveSpark,
-        new DoubleSupplier[] { driveSpark::getAppliedOutput, driveSpark::getBusVoltage },
+        List.of(driveSpark::getAppliedOutput, driveSpark::getBusVoltage),
         (values) -> inputs.driveAppliedVolts = values[0] * values[1]);
     ifOk(driveSpark, driveSpark::getOutputCurrent, (value) -> inputs.driveCurrentAmps = value);
     inputs.driveConnected = driveConnectedDebounce.calculate(!sparkStickyFault);
@@ -188,7 +193,7 @@ public class ModuleIOSpark implements ModuleIO {
     ifOk(turnSpark, turnEncoder::getVelocity, (value) -> inputs.turnVelocityRadPerSec = value);
     ifOk(
         turnSpark,
-        new DoubleSupplier[] { turnSpark::getAppliedOutput, turnSpark::getBusVoltage },
+        List.of(turnSpark::getAppliedOutput, turnSpark::getBusVoltage),
         (values) -> inputs.turnAppliedVolts = values[0] * values[1]);
     ifOk(turnSpark, turnSpark::getOutputCurrent, (value) -> inputs.turnCurrentAmps = value);
     inputs.zeroHelperTurnPosition = inputs.turnPosition.minus(zeroHelperRotation);
@@ -226,7 +231,7 @@ public class ModuleIOSpark implements ModuleIO {
   public void runDriveVelocitySetpoint(double velocityRadPerSec, boolean useAccel) {
     double ffVolts;
     if (useAccel) {
-      ffVolts = feedforward.calculateWithVelocities(lastVelocity, velocityRadPerSec);
+      ffVolts = feedforward.calculate(lastVelocity, velocityRadPerSec);
 
     } else {
       ffVolts = 0.0;

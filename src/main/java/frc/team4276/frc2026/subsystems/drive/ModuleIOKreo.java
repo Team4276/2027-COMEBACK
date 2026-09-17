@@ -3,34 +3,33 @@ package frc.team4276.frc2026.subsystems.drive;
 import static frc.team4276.frc2026.subsystems.drive.DriveConstants.*;
 import static frc.team4276.lib.SparkUtil.*;
 
+import java.util.List;
 import java.util.Queue;
-import java.util.function.DoubleSupplier;
 
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.PersistMode;
-import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
-import com.revrobotics.spark.SparkBase.ControlType;
+import com.revrobotics.spark.SparkLowLevel.ControlType;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
-import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
 import org.wpilib.math.util.MathUtil;
 import org.wpilib.math.filter.Debouncer;
 import org.wpilib.math.geometry.Rotation2d;
 import org.wpilib.units.measure.Angle;
+import org.wpilib.hardware.bus.CANPort;
 
 public class ModuleIOKreo implements ModuleIO {
   private final Rotation2d zeroRotation;
@@ -72,6 +71,9 @@ public class ModuleIOKreo implements ModuleIO {
       case 3 -> backRightZeroHelperRotation;
       default -> Rotation2d.ZERO;
     };
+    // CAN devices now take an explicit bus (SystemCore can host multiple CAN networks).
+    // new CANBus() / CANPort.CAN_S1 both resolve to the system default bus, keeping CTRE
+    // and REV devices on the same physical network as before.
     driveTalon = new TalonFX(
         switch (module) {
           case 0 -> frontLeftDriveCanId;
@@ -79,8 +81,10 @@ public class ModuleIOKreo implements ModuleIO {
           case 2 -> backLeftDriveCanId;
           case 3 -> backRightDriveCanId;
           default -> 0;
-        });
+        },
+        new CANBus());
     turnSpark = new SparkMax(
+        CANPort.CAN_S1,
         switch (module) {
           case 0 -> frontLeftTurnCanId;
           case 1 -> frontRightTurnCanId;
@@ -178,7 +182,7 @@ public class ModuleIOKreo implements ModuleIO {
     ifOk(turnSpark, turnEncoder::getVelocity, (value) -> inputs.turnVelocityRadPerSec = value);
     ifOk(
         turnSpark,
-        new DoubleSupplier[] { turnSpark::getAppliedOutput, turnSpark::getBusVoltage },
+        List.of(turnSpark::getAppliedOutput, turnSpark::getBusVoltage),
         (values) -> inputs.turnAppliedVolts = values[0] * values[1]);
     ifOk(turnSpark, turnSpark::getOutputCurrent, (value) -> inputs.turnCurrentAmps = value);
     inputs.zeroHelperTurnPosition = inputs.turnPosition.minus(zeroHelperRotation);
@@ -216,7 +220,7 @@ public class ModuleIOKreo implements ModuleIO {
   public void runDriveVelocitySetpoint(double velocityRadPerSec, boolean useAccel) {
     double ffVolts;
     if (useAccel) {
-      ffVolts = feedforward.calculateWithVelocities(lastVelocity, velocityRadPerSec);
+      ffVolts = feedforward.calculate(lastVelocity, velocityRadPerSec);
 
     } else {
       ffVolts = 0.0;

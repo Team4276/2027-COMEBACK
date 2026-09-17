@@ -13,8 +13,8 @@
 
 package frc.team4276.frc2026.subsystems.vision;
 
-import org.wpilib.vision.apriltag.AprilTagFieldLayout;
-import org.wpilib.vision.apriltag.AprilTagFields;
+import org.wpilib.fields.Field;
+import org.wpilib.fields.Fields;
 import org.wpilib.math.geometry.Rotation3d;
 import org.wpilib.math.geometry.Transform3d;
 import org.wpilib.math.util.Units;
@@ -32,7 +32,7 @@ public class VisionConstants {
       forceEnableInstanceLogging || Constants.getMode() == Mode.REPLAY;
 
   // AprilTag layout
-  public static AprilTagFieldLayout aprilTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  public static Field aprilTagLayout = Field.loadField(Fields.FRC_2026_REBUILT_WELDED);
 
   // Robot to camera transforms
   public static final Transform3d ov9281RobotToCamera = new Transform3d(

@@ -4,9 +4,10 @@ import static frc.team4276.frc2026.subsystems.intake.IntakeConstants.*;
 
 import org.littletonrobotics.junction.Logger;
 
-import org.wpilib.command3.SubsystemBase;
+import org.wpilib.command3.Command;
+import org.wpilib.command3.Mechanism;
 
-public class Intake extends SubsystemBase {
+public class Intake implements Mechanism {
     private IntakeIO io;
     private IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
@@ -29,18 +30,25 @@ public class Intake extends SubsystemBase {
 
     public Intake(IntakeIO io){
         this.io = io;
+
+        getRegisteredScheduler().addPeriodic(this::updateInputs);
+        setDefaultCommand(applyStateCommand());
     }
 
-    @Override
-    public void periodic() {
+    private void updateInputs() {
         io.updateInputs(inputs);
         Logger.processInputs("Intake", inputs);
+    }
 
-        systemState = handleStateTransition();
-        applyState();
+    /** Continuously advances the state machine and applies the resulting outputs. */
+    public Command applyStateCommand() {
+        return runRepeatedly(() -> {
+            systemState = handleStateTransition();
+            applyState();
 
-        Logger.recordOutput("Intake/SystemState", systemState);
-        Logger.recordOutput("Intake/DesiredState", wantedState);
+            Logger.recordOutput("Intake/SystemState", systemState);
+            Logger.recordOutput("Intake/DesiredState", wantedState);
+        }).withPriority(Command.LOWEST_PRIORITY).named("Intake[APPLY STATE]");
     }
 
     private SystemState handleStateTransition() {
@@ -64,7 +72,7 @@ public class Intake extends SubsystemBase {
                 io.setPosition(retractPosition);
 
                 break;
-            
+
             case INTAKING:
                 io.setOpenLoop(intakeVolts);
                 io.setPosition(deployPosition);
@@ -81,7 +89,7 @@ public class Intake extends SubsystemBase {
     public void setWantedState(WantedState state){
         wantedState = state;
     }
-    
+
     public void setBrakeMode(boolean enabled){
         io.setBrakeMode(enabled);
     }

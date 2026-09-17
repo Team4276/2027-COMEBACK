@@ -33,7 +33,7 @@ public class DriveConstants {
   public static final Rotation2d frontLeftZeroHelperRotation = Rotation2d.CCW_90DEG;
   public static final Rotation2d frontRightZeroHelperRotation = Rotation2d.ZERO;
   public static final Rotation2d backLeftZeroHelperRotation = Rotation2d.k180deg;
-  public static final Rotation2d backRightZeroHelperRotation = Rotation2d.CCW_90DEG;
+  public static final Rotation2d backRightZeroHelperRotation = Rotation2d.CW_90DEG;
 
   // Device CAN IDs
   public static final int frontLeftDriveCanId = Ports.FRONT_LEFT_DRIVE;

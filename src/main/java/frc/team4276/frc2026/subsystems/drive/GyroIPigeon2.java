@@ -5,6 +5,7 @@ import static frc.team4276.lib.PhoenixUtil.*;
 import java.util.Queue;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.hardware.Pigeon2;
@@ -16,7 +17,10 @@ import org.wpilib.units.measure.AngularVelocity;
 import frc.team4276.frc2026.Ports;
 
 public class GyroIPigeon2 implements GyroIO {
-  private final Pigeon2 gyro = new Pigeon2(Ports.PIGEON);
+  // CAN devices now take an explicit CANBus (SystemCore can host multiple CAN networks).
+  // new CANBus() resolves to the system default ("can_s1" on real SystemCore hardware),
+  // matching the single implicit bus this code used before.
+  private final Pigeon2 gyro = new Pigeon2(Ports.PIGEON, new CANBus());
 
   private final StatusSignal<Angle> yawStatusSignal = gyro.getYaw();
   private final Queue<Double> yawPositionQueue;

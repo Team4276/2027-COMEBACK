@@ -15,6 +15,7 @@ package frc.team4276.frc2026.subsystems.drive;
 
 import com.revrobotics.REVLibError;
 import com.revrobotics.spark.SparkBase;
+import com.revrobotics.util.Signal;
 import org.wpilib.system.Notifier;
 import org.wpilib.system.RobotController;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 /**
  * Provides an interface for asynchronously reading high-frequency measurements to a set of queues.
@@ -31,7 +33,7 @@ import java.util.function.DoubleSupplier;
  */
 public class SparkOdometryThread {
   private final List<SparkBase> sparks = new ArrayList<>();
-  private final List<DoubleSupplier> sparkSignals = new ArrayList<>();
+  private final List<Supplier<Signal<Double>>> sparkSignals = new ArrayList<>();
   private final List<DoubleSupplier> genericSignals = new ArrayList<>();
   private final List<Queue<Double>> sparkQueues = new ArrayList<>();
   private final List<Queue<Double>> genericQueues = new ArrayList<>();
@@ -58,7 +60,7 @@ public class SparkOdometryThread {
   }
 
   /** Registers a Spark signal to be read from the thread. */
-  public Queue<Double> registerSignal(SparkBase spark, DoubleSupplier signal) {
+  public Queue<Double> registerSignal(SparkBase spark, Supplier<Signal<Double>> signal) {
     Queue<Double> queue = new ArrayBlockingQueue<>(20);
     Drive.odometryLock.lock();
     try {
@@ -101,14 +103,16 @@ public class SparkOdometryThread {
     Drive.odometryLock.lock();
     try {
       // Get sample timestamp
-      double timestamp = RobotController.getFPGATime() / 1e6;
+      double timestamp = RobotController.getTime() / 1e6;
 
-      // Read Spark values, mark invalid in case of error
+      // Read Spark values, mark invalid in case of error. REVLib signal getters now
+      // return Signal<Double> (carrying per-value validity) instead of a raw double.
       double[] sparkValues = new double[sparkSignals.size()];
       boolean isValid = true;
       for (int i = 0; i < sparkSignals.size(); i++) {
-        sparkValues[i] = sparkSignals.get(i).getAsDouble();
-        if (sparks.get(i).getLastError() != REVLibError.kOk) {
+        Signal<Double> signal = sparkSignals.get(i).get();
+        sparkValues[i] = signal.get();
+        if (!signal.isValid() || sparks.get(i).getLastError() != REVLibError.kOk) {
           isValid = false;
         }
       }

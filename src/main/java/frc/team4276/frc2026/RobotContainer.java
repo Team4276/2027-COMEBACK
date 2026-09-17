@@ -6,14 +6,7 @@ package frc.team4276.frc2026;
 
 import org.wpilib.math.geometry.Pose2d;
 import org.wpilib.math.geometry.Rotation2d;
-import org.wpilib.driverstation.MatchState;
-import org.wpilib.driverstation.Alliance;
-import org.wpilib.driverstation.MatchType;
-import org.wpilib.driverstation.DriverStation;
-import org.wpilib.driverstation.internal.DriverStationBackend;
-import org.wpilib.driverstation.DriverStationErrors;
 import org.wpilib.command3.Command;
-import org.wpilib.command3.Commands;
 import frc.team4276.frc2026.shooter.ShooterConstants.ParamPreset;
 import frc.team4276.frc2026.subsystems.Superstructure;
 import frc.team4276.frc2026.subsystems.drive.Drive;
@@ -42,7 +35,6 @@ import frc.team4276.frc2026.subsystems.turret.TurretIO;
 import frc.team4276.frc2026.subsystems.turret.TurretIOTalonFX;
 import frc.team4276.frc2026.subsystems.vision.Vision;
 import frc.team4276.frc2026.subsystems.vision.VisionIO;
-import frc.team4276.frc2026.subsystems.vision.VisionIOPhotonVision;
 import frc.team4276.lib.geometry.AllianceFlipUtil;
 import frc.team4276.lib.hid.CowsController;
 import frc.team4276.lib.hid.ViXController;
@@ -81,8 +73,11 @@ public class RobotContainer {
           turret = new Turret(new TurretIOTalonFX());
           hood = new Hood(new HoodIOTalonFX());
           flywheel = new Flywheel(new FlywheelIOTalonFX());
-          vision = new Vision(RobotState.getInstance()::addVisionMeasurement, new VisionIOPhotonVision(0),
-              new VisionIOPhotonVision(1));
+          // PhotonVision's only 2027 build has a confirmed ABI break under alpha-7 (see
+          // build.gradle) - running vision-free (odometry only) for this event.
+          vision = new Vision(RobotState.getInstance()::addVisionMeasurement, new VisionIO() {
+          }, new VisionIO() {
+          });
         }
 
         case SIMBOT -> {
@@ -168,20 +163,25 @@ public class RobotContainer {
 
     configureBindings();
 
-    DriverStationBackend.silenceJoystickConnectionAlert(true);
+    // DriverStation.silenceJoystickConnectionWarning(true) was removed in 2027 with no
+    // direct replacement - the joystick-not-connected console warning can no longer be
+    // silenced this way.
   }
 
   private void configureBindings() {
     driver
         .menu()
         .onTrue(
-            Commands.runOnce(
-                () -> RobotState.getInstance()
+            // Note: command3 has no ignoringDisable() concept - commands and sideloads
+            // always run regardless of robot-enable state, so v2's .ignoringDisable(true)
+            // here is simply the default now.
+            Command.noRequirements(
+                coroutine -> RobotState.getInstance()
                     .resetPose(
                         new Pose2d(
                             RobotState.getInstance().getEstimatedPose().getTranslation(),
                             AllianceFlipUtil.apply(Rotation2d.ZERO))))
-                .ignoringDisable(true));
+                .named("ResetPoseToCurrentHeading"));
 
     driver
         .rightTrigger()
@@ -216,12 +216,14 @@ public class RobotContainer {
         .onTrue(superstructure.turtle());
 
     driver
-        .povUp()
-        .onTrue(Commands.runOnce(() -> superstructure.setIsFirstActive(true)));
+        .dpadUp()
+        .onTrue(Command.noRequirements(coroutine -> superstructure.setIsFirstActive(true))
+            .named("SetIsFirstActive[true]"));
 
     driver
-        .povDown()
-        .onTrue(Commands.runOnce(() -> superstructure.setIsFirstActive(false)));
+        .dpadDown()
+        .onTrue(Command.noRequirements(coroutine -> superstructure.setIsFirstActive(false))
+            .named("SetIsFirstActive[false]"));
 
     // POV RIGHT/LEFT: adjust turret manually for zeroing
     // dashboard: zero turret
@@ -233,6 +235,6 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return Commands.none();
+    return Command.noRequirements(coroutine -> {}).named("None");
   }
 }

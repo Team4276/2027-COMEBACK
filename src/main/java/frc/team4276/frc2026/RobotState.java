@@ -150,7 +150,10 @@ public class RobotState {
   }
 
   public Rotation2d getHubAlignHeading() {
-    return FieldConstants.Hub.innerCenterPoint.toTranslation2d().minus(getEstimatedPose().getTranslation()).getAngle();
+    // Translation2d.getAngle() now returns Optional<Rotation2d> (undefined for a
+    // zero-length vector, i.e. the robot sitting exactly on the hub's center point).
+    return FieldConstants.Hub.innerCenterPoint.toTranslation2d().minus(getEstimatedPose().getTranslation())
+        .getAngle().orElse(Rotation2d.ZERO);
   }
 
   public FieldZone getCurrentFieldZone(){
@@ -183,7 +186,7 @@ public class RobotState {
   }
 
   public ChassisVelocities getFieldVelocity() {
-    return ChassisVelocities.fromRobotRelativeSpeeds(robotVelocity, getEstimatedPose().getRotation());
+    return robotVelocity.toFieldRelative(getEstimatedPose().getRotation());
   }
 
   public record FuelPoseRecord(Translation2d translation, double timestamp) {
