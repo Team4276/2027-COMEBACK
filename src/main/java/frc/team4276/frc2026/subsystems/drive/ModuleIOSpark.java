@@ -106,11 +106,6 @@ public class ModuleIOSpark implements ModuleIO {
         .idleMode(IdleMode.kBrake)
         .smartCurrentLimit(driveMotorCurrentLimit)
         .voltageCompensation(12.0);
-    driveConfig.encoder
-        .positionConversionFactor(driveEncoderPositionFactor)
-        .velocityConversionFactor(driveEncoderVelocityFactor)
-        .uvwMeasurementPeriod(10)
-        .uvwAverageDepth(2);
     driveConfig.closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .pid(
@@ -143,13 +138,11 @@ public class ModuleIOSpark implements ModuleIO {
         .voltageCompensation(12.0);
     turnConfig.absoluteEncoder
         .inverted(turnEncoderInverted)
-        .positionConversionFactor(turnEncoderPositionFactor)
-        .velocityConversionFactor(turnEncoderVelocityFactor)
         .averageDepth(2);
     turnConfig.closedLoop
         .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
         .positionWrappingEnabled(true)
-        .positionWrappingInputRange(0, 2 * Math.PI)
+        //.positionWrappingInputRange(0, 2 * Math.PI)
         .pid(turnKp, 0.0, turnKd);
     turnConfig.signals
         .absoluteEncoderPositionAlwaysOn(true)
@@ -175,8 +168,8 @@ public class ModuleIOSpark implements ModuleIO {
   public void updateInputs(ModuleIOInputs inputs) {
     // Update drive inputs
     sparkStickyFault = false;
-    ifOk(driveSpark, driveEncoder::getPosition, (value) -> inputs.drivePositionRad = value);
-    ifOk(driveSpark, driveEncoder::getVelocity, (value) -> inputs.driveVelocityRadPerSec = value);
+    ifOk(driveSpark, driveEncoder::getPosition, (value) -> inputs.drivePositionRad = value * turnEncoderPositionFactor);
+    ifOk(driveSpark, driveEncoder::getVelocity, (value) -> inputs.driveVelocityRadPerSec = value * turnEncoderVelocityFactor);
     ifOk(
         driveSpark,
         List.of(driveSpark::getAppliedOutput, driveSpark::getBusVoltage),
@@ -190,7 +183,7 @@ public class ModuleIOSpark implements ModuleIO {
         turnSpark,
         turnEncoder::getPosition,
         (value) -> inputs.turnPosition = new Rotation2d(value).minus(zeroRotation));
-    ifOk(turnSpark, turnEncoder::getVelocity, (value) -> inputs.turnVelocityRadPerSec = value);
+    ifOk(turnSpark, turnEncoder::getVelocity, (value) -> inputs.turnVelocityRadPerSec = value * turnEncoderVelocityFactor);
     ifOk(
         turnSpark,
         List.of(turnSpark::getAppliedOutput, turnSpark::getBusVoltage),

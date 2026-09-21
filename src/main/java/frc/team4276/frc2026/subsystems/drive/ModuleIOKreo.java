@@ -132,13 +132,11 @@ public class ModuleIOKreo implements ModuleIO {
         .voltageCompensation(12.0);
     turnConfig.absoluteEncoder
         .inverted(turnEncoderInverted)
-        .positionConversionFactor(turnEncoderPositionFactor)
-        .velocityConversionFactor(turnEncoderVelocityFactor)
         .averageDepth(2);
     turnConfig.closedLoop
         .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
         .positionWrappingEnabled(true)
-        .positionWrappingInputRange(0, 2 * Math.PI)
+        //.positionWrappingInputRange(0, 2 * Math.PI)
         .pid(turnKp, 0.0, turnKd);
     turnConfig.signals
         .absoluteEncoderPositionAlwaysOn(true)
@@ -179,7 +177,7 @@ public class ModuleIOKreo implements ModuleIO {
         turnSpark,
         turnEncoder::getPosition,
         (value) -> inputs.turnPosition = new Rotation2d(value).minus(zeroRotation));
-    ifOk(turnSpark, turnEncoder::getVelocity, (value) -> inputs.turnVelocityRadPerSec = value);
+    ifOk(turnSpark, turnEncoder::getVelocity, (value) -> inputs.turnVelocityRadPerSec = value * turnEncoderVelocityFactor);
     ifOk(
         turnSpark,
         List.of(turnSpark::getAppliedOutput, turnSpark::getBusVoltage),
