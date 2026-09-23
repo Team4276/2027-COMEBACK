@@ -24,12 +24,12 @@ public class Module {
     this.index = index;
     driveDisconnectedAlert =
         new Alert(
-            "Drive",
+            "Drive" + index,
             "Disconnected drive motor on module " + Integer.toString(index) + ".",
             Level.HIGH);
     turnDisconnectedAlert =
         new Alert(
-            "Drive",
+            "Turn" + index,
             "Disconnected turn motor on module " + Integer.toString(index) + ".", Level.HIGH);
   }
 
